@@ -7,6 +7,7 @@ services:
 
 before_install:
     - docker pull influxdb
+    - docker pull kcov/kcov:latest
     - docker run -d -p 8086:8086 --name influxdb influxdb
     - docker run -d -p 9086:8086 --name authed_influxdb -e INFLUXDB_HTTP_AUTH_ENABLED=true -e INFLUXDB_ADMIN_USER=admin -e INFLUXDB_ADMIN_PASSWORD=password -e INFLUXDB_USER=nopriv_user -e INFLUXDB_USER_PASSWORD=password influxdb
     - docker ps
@@ -49,10 +50,7 @@ matrix:
               - |
                   cargo build &&
                   cargo coverage &&
-                  wget https://github.com/SimonKagstrom/kcov/archive/master.tar.gz &&
-                  tar xzf master.tar.gz && mkdir kcov-master/build && cd kcov-master/build && cmake .. && make &&
-                  sudo make install && cd ../.. &&
-                  kcov --coveralls-id=$TRAVIS_JOB_ID --exclude-pattern=/.cargo --exclude-path=./tests target/kcov target/debug/influxdb-*
+                  docker run -it --rm --security-opt seccomp=unconfined --volume "$(PWD):/project" kcov/kcov:latest kcov -- --coveralls-id=$TRAVIS_JOB_ID --exclude-pattern=/project/.cargo --exclude-path=/project/tests /project/target/kcov /project/target/debug/influxdb-*
           addons:
               apt:
                   packages:
